@@ -1,7 +1,7 @@
 name: Crawl and Check Keyboxes
 
 on:
-  workflow_dispatch:  # Cho phép chạy thủ công từ GitHub
+  workflow_dispatch:
 
 jobs:
   run-keybox-check:
@@ -16,22 +16,22 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: 📦 Install dependencies
+      - name: 📦 Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install cryptography requests python-dotenv lxml colorama
 
-      - name: 🚀 Run keybox.py (download keyboxes)
+      - name: 🚀 Run keybox.py (crawl keyboxes)
         run: |
           python keybox.py
         env:
-          GH_PAT: ${{ secrets.GH_PAT }}  # GitHub token nếu cần search API
+          MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
 
       - name: ✅ Run check_keyboxes.py (validate keyboxes)
         run: |
           python check_keyboxes.py
 
-      - name: 📤 Upload valid keyboxes as artifact
+      - name: 📤 Upload valid keyboxes
         uses: actions/upload-artifact@v4
         with:
           name: valid_keybox
