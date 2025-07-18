@@ -1,36 +1,35 @@
-name: 🛠️ Keybox Checker CI
+name: Crawl and Check Keyboxes
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - '**.py'
-      - '**.yml'
 
 jobs:
-  run-scripts:
+  run-keybox-check:
     runs-on: ubuntu-latest
 
     steps:
-      - name: ⬇️ Checkout repository
+      - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
       - name: 🐍 Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
-      - name: 📦 Install dependencies
+      - name: 📦 Install Python dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install cryptography requests python-dotenv lxml colorama
 
-      - name: ▶️ Run keybox.py
-        run: python keybox.py
+      - name: 🚀 Run keybox.py (crawl keyboxes)
+        run: |
+          python keybox.py
         env:
-          GH_PAT: ${{ secrets.MY_GITHUB_TOKEN }}
+          MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
 
-      - name: ▶️ Run check.py
-        run: python check.py
+      - name: ✅ Run check.py (validate keyboxes)
+        run: |
+          python check.py
 
       - name: 📤 Upload valid keyboxes
         uses: actions/upload-artifact@v4
