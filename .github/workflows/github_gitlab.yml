@@ -25,7 +25,7 @@ jobs:
         run: |
           python github_gitlab.py
         env:
-          GITHUB_TOKENS: ${{ secrets.GITHUB_TOKENS }}
+          MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
           GITLAB_TOKENS: ${{ secrets.GITLAB_TOKENS }}
 
       - name: ✅ Run check.py (validate keyboxes)
