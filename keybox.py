@@ -194,12 +194,12 @@ open(cache_file, "w").writelines(cached_urls)
 
 print(f"Tổng số keybox tìm thấy: {total_keybox_count}")
 
-# Kiểm tra các keybox đã lưu và in ra các keybox hợp lệ cùng URL nguồn
-print("\nDanh sách các keybox hợp lệ và URL nguồn:")
-for file_path, url in keybox_urls.items():
+# In ra danh sách các file keybox hợp lệ (chỉ tên file .xml)
+print("\nDanh sách các keybox hợp lệ:")
+for file_path in save.glob("*.xml"):
     try:
         file_content = file_path.read_bytes()
         if keybox_check(file_content):
-            print(f"{file_path.name}: {url}")
+            print(file_path.name)
     except Exception as e:
         print(f"Lỗi khi kiểm tra file {file_path.name}: {e}")
