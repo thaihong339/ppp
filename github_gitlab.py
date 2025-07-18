@@ -14,22 +14,24 @@ BOLD = Style.BRIGHT
 
 load_dotenv()
 
-# Token rotation
-GITHUB_TOKENS = os.getenv("GITHUB_TOKENS", "")
-GITLAB_TOKENS = os.getenv("GITLAB_TOKENS", "")
+# --- Cách 2: Tách token GitHub / GitLab từ 1 biến GITLAB_GITHUB ---
+ALL_TOKENS = os.getenv("GITLAB_GITHUB", "")
+if not ALL_TOKENS:
+    raise ValueError("Thiếu biến môi trường GITLAB_GITHUB")
 
-github_tokens = [t.strip() for t in GITHUB_TOKENS.split(",") if t.strip()]
-gitlab_tokens = [t.strip() for t in GITLAB_TOKENS.split(",") if t.strip()]
+tokens = [t.strip() for t in ALL_TOKENS.split(",") if t.strip()]
+github_tokens = [t for t in tokens if t.startswith("ghp_")]
+gitlab_tokens = [t for t in tokens if t.startswith("glpat-")]
 
 if not github_tokens:
-    raise ValueError("Thiếu GitHub token trong GITHUB_TOKENS")
+    raise ValueError("Không tìm thấy GitHub token trong GITLAB_GITHUB")
 if not gitlab_tokens:
-    raise ValueError("Thiếu GitLab token trong GITLAB_TOKENS")
+    raise ValueError("Không tìm thấy GitLab token trong GITLAB_GITHUB")
 
 github_cycle = itertools.cycle(github_tokens)
 gitlab_cycle = itertools.cycle(gitlab_tokens)
 
-# Setup
+# --- Setup ---
 save_dir = Path(__file__).resolve().parent / "found_keybox"
 save_dir.mkdir(parents=True, exist_ok=True)
 cache_file = Path(__file__).resolve().parent / "cache.txt"
@@ -89,7 +91,7 @@ def github_query(term):
 
 def gitlab_search(term):
     results = []
-    for page in range(1, 5):  # Search up to 4 pages per term
+    for page in range(1, 5):
         current_token = next(gitlab_cycle)
         params = {
             "scope": "blobs",
@@ -114,7 +116,6 @@ def fetch_url_content(url):
     r = session.get(url)
     return r.content if r.status_code == 200 else None
 
-# Search GitHub
 def search_github():
     for term in search_terms:
         print(f"\n{BOLD}[GitHub] Đang tìm: {term}")
@@ -130,7 +131,6 @@ def search_github():
             if content:
                 save_keybox(content)
 
-# Search GitLab
 def search_gitlab():
     for term in search_terms:
         print(f"\n{BOLD}[GitLab] Đang tìm: {term}")
@@ -140,13 +140,12 @@ def search_gitlab():
             if not file_url or file_url + "\n" in cached_urls:
                 continue
             cached_urls.add(file_url + "\n")
-            # Convert web URL to raw URL
             raw_url = file_url.replace("gitlab.com/", "gitlab.com/-/raw/")
             content = fetch_url_content(raw_url)
             if content:
                 save_keybox(content)
 
-# Main
+# --- Main ---
 search_github()
 search_gitlab()
 
