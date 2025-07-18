@@ -14,19 +14,22 @@ BOLD = Style.BRIGHT
 
 load_dotenv()
 
-# --- Cách 2: Tách token GitHub / GitLab từ 1 biến GITLAB_GITHUB ---
-ALL_TOKENS = os.getenv("GITLAB_GITHUB", "")
-if not ALL_TOKENS:
-    raise ValueError("Thiếu biến môi trường GITLAB_GITHUB")
+# --- Tách token GitHub và GitLab từ 2 biến môi trường ---
+GITHUB_TOKENS = os.getenv("MY_GITHUB_TOKEN", "")
+GITLAB_TOKENS = os.getenv("GITLAB_TOKENS", "")
 
-tokens = [t.strip() for t in ALL_TOKENS.split(",") if t.strip()]
-github_tokens = [t for t in tokens if t.startswith("ghp_")]
-gitlab_tokens = [t for t in tokens if t.startswith("glpat-")]
+if not GITHUB_TOKENS:
+    raise ValueError("Thiếu biến môi trường MY_GITHUB_TOKEN")
+if not GITLAB_TOKENS:
+    raise ValueError("Thiếu biến môi trường GITLAB_TOKENS")
+
+github_tokens = [t.strip() for t in GITHUB_TOKENS.split(",") if t.strip()]
+gitlab_tokens = [t.strip() for t in GITLAB_TOKENS.split(",") if t.strip()]
 
 if not github_tokens:
-    raise ValueError("Không tìm thấy GitHub token trong GITLAB_GITHUB")
+    raise ValueError("Không tìm thấy token GitHub")
 if not gitlab_tokens:
-    raise ValueError("Không tìm thấy GitLab token trong GITLAB_GITHUB")
+    raise ValueError("Không tìm thấy token GitLab")
 
 github_cycle = itertools.cycle(github_tokens)
 gitlab_cycle = itertools.cycle(gitlab_tokens)
