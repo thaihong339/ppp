@@ -1,4 +1,4 @@
-name: github_gitlab
+name: gitlab
 
 on:
   workflow_dispatch:
@@ -21,9 +21,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install cryptography requests python-dotenv lxml colorama
 
-      - name: 🚀 Run github_gitlab.py (crawl keyboxes)
+      - name: 🚀 Run gitlab.py (crawl keyboxes)
         run: |
-          python github_gitlab.py
+          python gitlab.py
         env:
           MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
           GITLAB_TOKENS: ${{ secrets.GITLAB_TOKENS }}
