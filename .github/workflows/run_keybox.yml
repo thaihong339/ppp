@@ -7,6 +7,9 @@ jobs:
   run-keybox:
     runs-on: ubuntu-latest
 
+    env:
+      TOKENS: ${{ secrets.TOKENS }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -23,10 +26,10 @@ jobs:
 
       - name: Run keybox.py script
         run: |
-          python keybox.py > valid_keybox_output.txt
+          python keybox.py > valid_keybox.xml
 
       - name: Upload output artifact
         uses: actions/upload-artifact@v3
         with:
           name: valid-keybox-output
-          path: valid_keybox_output.txt
+          path: valid_keybox.xml
