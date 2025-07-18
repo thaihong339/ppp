@@ -1,4 +1,4 @@
-import hashlib
+ẩn import hashlib
 import os
 from pathlib import Path
 
@@ -23,15 +23,15 @@ session = requests.Session()
 
 # Load environment variables from .env file
 load_dotenv()
-GITHUB_TOKENS = os.getenv("GITHUB_TOKENS")
+GITHUB_TOKENS = os.getenv("MY_GITHUB_TOKEN")
 
 if not GITHUB_TOKENS:
-    raise ValueError("GITHUB_TOKENS is not set in the .env file")
+    raise ValueError("MY_GITHUB_TOKEN is not set in the .env file")
 
 # Tách các token thành danh sách
 tokens = [token.strip() for token in GITHUB_TOKENS.split(",") if token.strip()]
 if not tokens:
-    raise ValueError("Danh sách GITHUB_TOKENS rỗng hoặc không hợp lệ")
+    raise ValueError("Danh sách MY_GITHUB_TOKEN rỗng hoặc không hợp lệ")
 
 import itertools
 # Tạo vòng lặp luân phiên các token
