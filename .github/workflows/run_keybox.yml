@@ -27,9 +27,9 @@ jobs:
         env:
           MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
 
-      - name: ✅ Run check_keyboxes.py (validate keyboxes)
+      - name: ✅ Run check.py (validate keyboxes)
         run: |
-          python check_keyboxes.py
+          python check.py
 
       - name: 📤 Upload valid keyboxes
         uses: actions/upload-artifact@v4
