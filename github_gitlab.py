@@ -1,6 +1,4 @@
-# keybox_search_gitgraph.py
-# GitHub GraphQL + GitLab REST combined keybox searcher
-
+# -*- coding: utf-8 -*-
 import hashlib
 import os
 from pathlib import Path
@@ -15,22 +13,27 @@ init(autoreset=True)
 BOLD = Style.BRIGHT
 
 load_dotenv()
-GITHUB_TOKENS = os.getenv("MY_GITHUB_TOKEN")
-GITLAB_TOKEN = os.getenv("MY_GITLAB_TOKEN")
-if not GITHUB_TOKENS:
-    raise ValueError("MY_GITHUB_TOKEN is not set")
 
-tokens = [t.strip() for t in GITHUB_TOKENS.split(",") if t.strip()]
-if not tokens:
-    raise ValueError("GITHUB token list empty")
-token_cycle = itertools.cycle(tokens)
+# Token rotation
+GITHUB_TOKENS = os.getenv("GITHUB_TOKENS", "")
+GITLAB_TOKENS = os.getenv("GITLAB_TOKENS", "")
 
-save = Path(__file__).resolve().parent / "found_keybox"
-save.mkdir(parents=True, exist_ok=True)
+github_tokens = [t.strip() for t in GITHUB_TOKENS.split(",") if t.strip()]
+gitlab_tokens = [t.strip() for t in GITLAB_TOKENS.split(",") if t.strip()]
 
+if not github_tokens:
+    raise ValueError("Thiếu GitHub token trong GITHUB_TOKENS")
+if not gitlab_tokens:
+    raise ValueError("Thiếu GitLab token trong GITLAB_TOKENS")
+
+github_cycle = itertools.cycle(github_tokens)
+gitlab_cycle = itertools.cycle(gitlab_tokens)
+
+# Setup
+save_dir = Path(__file__).resolve().parent / "found_keybox"
+save_dir.mkdir(parents=True, exist_ok=True)
 cache_file = Path(__file__).resolve().parent / "cache.txt"
 cached_urls = set(open(cache_file).readlines()) if cache_file.exists() else set()
-total_keybox_count = 0
 
 search_terms = [
     "<AndroidAttestation>",
@@ -38,45 +41,28 @@ search_terms = [
     "</CertificateChain>",
 ]
 
-GQL_API = "https://api.github.com/graphql"
-GITLAB_SEARCH = "https://gitlab.com/api/v4/search"
-
 session = requests.Session()
+GITHUB_GQL = "https://api.github.com/graphql"
+GITLAB_SEARCH_API = "https://gitlab.com/api/v4/search"
 
-def graphql_query(query):
-    current_token = next(token_cycle)
-    headers = {
-        "Authorization": f"bearer {current_token}",
-        "Accept": "application/vnd.github.v3+json"
-    }
-    r = session.post(GQL_API, json={"query": query}, headers=headers)
-    if r.status_code != 200:
-        print(f"GitHub GraphQL error {r.status_code}, sleeping...")
-        time.sleep(10)
-        return None
-    return r.json()
+total_count = 0
 
-def fetch_file_content(url, headers=None):
-    r = session.get(url, headers=headers)
-    return r.content if r.status_code == 200 else None
-
-def save_keybox(raw_url, content):
-    global total_keybox_count
+def save_keybox(content):
+    global total_count
     try:
         root = etree.fromstring(content)
+        canonical = etree.tostring(root, method="c14n")
+        hash_val = hashlib.sha256(canonical).hexdigest()
+        fpath = save_dir / (hash_val + ".xml")
+        if not fpath.exists():
+            with open(fpath, "wb") as f:
+                f.write(content)
+            total_count += 1
+            print(f"{Fore.GREEN}Lưu mới: {fpath.name}")
     except:
         return
-    canonical = etree.tostring(root, method="c14n")
-    hash_val = hashlib.sha256(canonical).hexdigest()
-    fpath = save / (hash_val + ".xml")
-    if not fpath.exists():
-        with open(fpath, "wb") as f:
-            f.write(content)
-        total_keybox_count += 1
-        print(f"{Fore.GREEN}Lưu mới: {fpath.name}")
 
-def github_search(term):
-    print(f"\n{BOLD}GitHub: {term}")
+def github_query(term):
     query = f'''
     {{
       search(query: "{term} extension:xml", type: CODE, first: 100) {{
@@ -87,51 +73,82 @@ def github_search(term):
           }}
         }}
       }}
-    }}'''
-    result = graphql_query(query)
-    if not result:
-        return
-    items = result.get("data", {}).get("search", {}).get("nodes", [])
-    for item in items:
-        repo = item["repository"]["nameWithOwner"]
-        path = item["path"]
-        raw_url = f"https://raw.githubusercontent.com/{repo}/HEAD/{path}"
-        if raw_url + "\n" in cached_urls:
-            continue
-        cached_urls.add(raw_url + "\n")
-        content = fetch_file_content(raw_url)
-        if content:
-            save_keybox(raw_url, content)
+    }}
+    '''
+    current_token = next(github_cycle)
+    headers = {
+        "Authorization": f"bearer {current_token}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    r = session.post(GITHUB_GQL, json={"query": query}, headers=headers)
+    if r.status_code != 200:
+        print(f"{Fore.YELLOW}[GitHub] Lỗi {r.status_code}, đợi 10s...")
+        time.sleep(10)
+        return []
+    return r.json().get("data", {}).get("search", {}).get("nodes", [])
 
 def gitlab_search(term):
-    if not GITLAB_TOKEN:
-        print("GITLAB token not set, skipping GitLab")
-        return
-    print(f"\n{BOLD}GitLab: {term}")
-    headers = {"Private-Token": GITLAB_TOKEN}
-    for page in range(1, 6):  # Limit pages
-        params = {"scope": "blobs", "search": term, "per_page": 20, "page": page}
-        r = session.get(GITLAB_SEARCH, headers=headers, params=params)
+    results = []
+    for page in range(1, 5):  # Search up to 4 pages per term
+        current_token = next(gitlab_cycle)
+        params = {
+            "scope": "blobs",
+            "search": term,
+            "per_page": 20,
+            "page": page
+        }
+        headers = {
+            "PRIVATE-TOKEN": current_token
+        }
+        r = session.get(GITLAB_SEARCH_API, headers=headers, params=params)
+        if r.status_code == 429:
+            print(f"{Fore.YELLOW}[GitLab] Rate limit hit. Waiting 10s...")
+            time.sleep(10)
+            continue
         if r.status_code != 200:
-            print(f"GitLab error {r.status_code}")
             break
-        results = r.json()
+        results += r.json()
+    return results
+
+def fetch_url_content(url):
+    r = session.get(url)
+    return r.content if r.status_code == 200 else None
+
+# Search GitHub
+def search_github():
+    for term in search_terms:
+        print(f"\n{BOLD}[GitHub] Đang tìm: {term}")
+        results = github_query(term)
         for item in results:
-            project_id = item.get("project_id")
-            file_path = item.get("path")
-            if not project_id or not file_path:
-                continue
-            raw_url = f"https://gitlab.com/api/v4/projects/{project_id}/repository/files/{requests.utils.quote(file_path, safe='')}/raw?ref=master"
+            repo = item["repository"]["nameWithOwner"]
+            path = item["path"]
+            raw_url = f"https://raw.githubusercontent.com/{repo}/HEAD/{path}"
             if raw_url + "\n" in cached_urls:
                 continue
             cached_urls.add(raw_url + "\n")
-            content = fetch_file_content(raw_url, headers=headers)
+            content = fetch_url_content(raw_url)
             if content:
-                save_keybox(raw_url, content)
+                save_keybox(content)
 
-for term in search_terms:
-    github_search(term)
-    gitlab_search(term)
+# Search GitLab
+def search_gitlab():
+    for term in search_terms:
+        print(f"\n{BOLD}[GitLab] Đang tìm: {term}")
+        results = gitlab_search(term)
+        for item in results:
+            file_url = item.get("url")
+            if not file_url or file_url + "\n" in cached_urls:
+                continue
+            cached_urls.add(file_url + "\n")
+            # Convert web URL to raw URL
+            raw_url = file_url.replace("gitlab.com/", "gitlab.com/-/raw/")
+            content = fetch_url_content(raw_url)
+            if content:
+                save_keybox(content)
+
+# Main
+search_github()
+search_gitlab()
 
 open(cache_file, "w").writelines(cached_urls)
-print(f"\nTổng số keybox: {total_keybox_count}")
+print(f"\n{BOLD}Tổng số keybox đã lưu: {total_count}")
