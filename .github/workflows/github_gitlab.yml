@@ -23,7 +23,7 @@ jobs:
 
       - name: 🚀 Run github_gitlab.py (crawl keyboxes)
         run: |
-          python keybox.py
+          python github_gitlab.py
         env:
           GITHUB_TOKENS: ${{ secrets.gitlab_github }}
           GITLAB_TOKENS: ${{ secrets.gitlab_github }}
