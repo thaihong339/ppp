@@ -26,10 +26,10 @@ jobs:
 
       - name: Run keybox.py script
         run: |
-          python keybox.py > valid_keybox.xml
+          python keybox.py
 
-      - name: Upload output artifact
+      - name: Upload valid keyboxes artifact
         uses: actions/upload-artifact@v4
         with:
-          name: valid-keybox-output
-          path: valid_keybox.xml
+          name: valid-keyboxes
+          path: valid_keyboxes/
