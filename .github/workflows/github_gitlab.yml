@@ -21,7 +21,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install cryptography requests python-dotenv lxml colorama
 
-      - name: 🚀 Run keybox_search_graphql.py (crawl keyboxes)
+      - name: 🚀 Run github_gitlab.py (crawl keyboxes)
         run: |
           python keybox.py
         env:
