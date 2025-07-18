@@ -33,10 +33,8 @@ total_keybox_count = 0
 
 search_terms = [
     "<AndroidAttestation>",
-    "<CertificateChain>",
+    "<NumberOfCertificates>3</NumberOfCertificates>",
     "</CertificateChain>",
-    "</Keybox>",
-    "</NumberOfCertificates>"
 ]
 
 GQL_API = "https://api.github.com/graphql"
