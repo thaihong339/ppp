@@ -52,7 +52,10 @@ save = Path(__file__).resolve().parent / "keys"
 save.mkdir(parents=True, exist_ok=True)  # Ensure the keys directory exists
 cache_file = Path(__file__).resolve().parent / "cache.txt"
 
-cached_urls = set(open(cache_file, "r").readlines())
+if cache_file.exists():
+    cached_urls = set(open(cache_file, "r").readlines())
+else:
+    cached_urls = set()
 
 # Bộ đếm tổng số keybox tìm thấy
 total_keybox_count = 0
@@ -171,6 +174,8 @@ def fetch_and_process_results(search_url: str, page: int) -> bool:
                         f.write(file_content)
                     total_keybox_count += 1
                     keybox_urls[file_name_save] = raw_url
+                    # Yêu cầu lưu file keybox hợp lệ
+                    print(f"Đã lưu file keybox hợp lệ: {file_name_save.name}")
     return len(search_results["items"]) > 0  # Trả về True nếu có thể còn trang tiếp theo
 
 # Hàm lấy nội dung file từ URL
@@ -194,12 +199,18 @@ open(cache_file, "w").writelines(cached_urls)
 
 print(f"Tổng số keybox tìm thấy: {total_keybox_count}")
 
-# In ra danh sách các file keybox hợp lệ (chỉ tên file .xml)
-print("\nDanh sách các keybox hợp lệ:")
+# In ra danh sách các file keybox hợp lệ (lưu riêng từng file)
+print("\nLưu các file keybox hợp lệ riêng biệt:")
 for file_path in save.glob("*.xml"):
     try:
         file_content = file_path.read_bytes()
         if keybox_check(file_content):
-            print(file_path.name)
+            # Lưu file keybox hợp lệ ra thư mục valid_keyboxes
+            valid_dir = save.parent / "valid_keyboxes"
+            valid_dir.mkdir(exist_ok=True)
+            valid_file_path = valid_dir / file_path.name
+            with open(valid_file_path, "wb") as vf:
+                vf.write(file_content)
+            print(f"Đã lưu keybox hợp lệ: {valid_file_path}")
     except Exception as e:
         print(f"Lỗi khi kiểm tra file {file_path.name}: {e}")
