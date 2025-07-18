@@ -28,10 +28,9 @@ token_cycle = itertools.cycle(tokens)
 
 search_queries = [
     "<AndroidAttestation>",
-    "<CertificateChain>",
+    "<NumberOfCertificates>3</NumberOfCertificates>>",
     "</CertificateChain>",
     "</Keybox>",
-    "</NumberOfCertificates>"
 ]
 
 save = Path(__file__).resolve().parent / "found_keybox"
