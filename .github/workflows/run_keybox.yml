@@ -19,7 +19,7 @@ jobs:
       - name: 📦 Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install cryptography requests
+          pip install cryptography requests python-dotenv
 
       - name: 🚀 Run keybox.py (download keyboxes)
         run: |
