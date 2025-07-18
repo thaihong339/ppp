@@ -32,7 +32,8 @@ search_queries = [
     "<AndroidAttestation>",
     "<CertificateChain>",
     "</CertificateChain>",
-    "</Keybox>"
+    "</Keybox>",
+    "</NumberOfCertificates>"
 ]
 
 save = Path(__file__).resolve().parent / "found_keybox"
