@@ -1,0 +1,44 @@
+name: keybox_search_graphql
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-keybox-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: 📦 Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install cryptography requests python-dotenv lxml colorama
+
+      - name: 🚀 Run keybox_search_graphql.py (crawl keyboxes)
+        run: |
+          python keybox.py
+        env:
+          MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+
+      - name: ✅ Run check.py (validate keyboxes)
+        run: |
+          python check.py
+
+      - name: 📤 Upload valid keyboxes
+        uses: actions/upload-artifact@v4
+        with:
+          name: valid_keyboxes
+          path: valid_keyboxes/
+
+      - name: 📨 Send Telegram Message
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TG_BOT_TOKEN }}/sendMessage \
+            -d chat_id="${{ secrets.TG_CHAT_ID }}" \
+            -d text="✅ GitHub Action completed.\nKeybox search and validation done.\nCheck attached files or artifacts."
